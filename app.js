@@ -69,10 +69,66 @@ const DOKUMENTY = [
   }
 ];
 
+/* Sprawy z ekranu startowego: dane z rejestrów, jedna decyzja, potem status. */
+
+const OC = {
+  pojazd: 'Toyota Yaris · GD 8K113',
+  ubezpieczyciel: 'Ubezpieczalnia Krajowa S.A.',
+  polisa: 'OC/2026/084512',
+  skladka: 612,
+  termin: '2026-11-24',
+  nowyTermin: '2027-11-24'
+};
+
+const BT = {
+  pojazd: 'Toyota Yaris · GD 8K113',
+  ostatnie: '2026-01-20',
+  termin: '2027-01-20',
+  stacja: 'Stacja Kontroli Pojazdów „Motyw”',
+  adres: 'ul. Wolska 88, Warszawa · 1,9 km',
+  godzina: '9:40'
+};
+
+const US = {
+  urzad: 'Pierwszy Urząd Skarbowy w Warszawie',
+  pismo: 'PO/2026/448210',
+  wplynelo: '2026-11-04',
+  kwota: 240,
+  rok: '2025',
+  konto: '…8421'
+};
+
 const PRZYPOMNIENIA = [
-  { tag: 'OC', tytul: 'OC kończy się za 11 dni', opis: 'Toyota Yaris · GD 8K113', pilne: true },
-  { tag: 'BT', tytul: 'Badanie techniczne do 20 stycznia', opis: 'Toyota Yaris · GD 8K113', pilne: false },
-  { tag: 'US', tytul: 'Pismo z urzędu skarbowego', opis: 'Nadpłata 240 zł do zwrotu', pilne: false }
+  {
+    id: 'oc', tag: 'OC', pilne: true,
+    zrobione: () => !!state.oc,
+    tytul: () => {
+      if (state.oc) return 'OC opłacone';
+      const d = dniDo(OC.termin);
+      if (d > 0) return 'OC kończy się za ' + d + ' ' + odmianaDni(d);
+      if (d === 0) return 'OC kończy się dziś';
+      return 'OC wygasło ' + (-d) + ' ' + odmianaDni(-d) + ' temu';
+    },
+    opis: () => state.oc
+      ? 'Zapłacone ' + fmtDate(state.oc.data) + ' · ochrona do ' + fmtDate(OC.nowyTermin)
+      : OC.pojazd + ' · składka ' + zl(OC.skladka)
+  },
+  {
+    id: 'bt', tag: 'BT', pilne: false,
+    zrobione: () => !!state.bt,
+    tytul: () => state.bt ? 'Badanie techniczne umówione' : 'Badanie techniczne do ' + fmtDate(BT.termin),
+    opis: () => state.bt
+      ? fmtDate(state.bt.wizyta) + ', ' + state.bt.godzina + ' · ' + BT.stacja
+      : BT.pojazd + ' · ostatnie ' + fmtDate(BT.ostatnie)
+  },
+  {
+    id: 'us', tag: 'US', pilne: false,
+    zrobione: () => !!state.us,
+    tytul: () => state.us ? 'Nadpłata przekazana' : 'Pismo z urzędu skarbowego',
+    opis: () => state.us
+      ? zl(state.us.kwota) + ' na konto ' + state.us.konto + ' · zlecone ' + fmtDate(state.us.data)
+      : 'Nadpłata ' + zl(US.kwota) + ' do zwrotu · PIT za ' + US.rok
+  }
 ];
 
 const URZEDY = [
@@ -91,14 +147,30 @@ function wybraneDzieci(ids) {
   return DZIECI.filter(d => (ids || []).includes(d.id));
 }
 
+function zl(n) {
+  return n.toLocaleString('pl-PL') + ' zł';
+}
+
 function kwota800(ile) {
-  return (800 * ile).toLocaleString('pl-PL') + ' zł';
+  return zl(800 * ile);
+}
+
+/* Ile dni do podanej daty — przypomnienia liczą się od dziś, nie od wpisanej liczby. */
+function dniDo(iso) {
+  const a = new Date(isoToday() + 'T12:00:00');
+  const b = new Date(iso + 'T12:00:00');
+  return Math.round((b - a) / 86400000);
+}
+
+function odmianaDni(n) {
+  return Math.abs(n) === 1 ? 'dzień' : 'dni';
 }
 
 /* Świeży stan startowy — funkcja, nie stała, żeby nie współdzielić zagnieżdżonego draftu. */
 function freshState() {
   return {
     senior: false, case: null, wniosek: null, meldunek: null, swiadczenie: null,
+    oc: null, bt: null, us: null,
     draft: {
       powod: 'zgubiony', urzad: 0,
       meldunekRodzaj: 'staly', meldunekDzieci: [],
@@ -183,20 +255,21 @@ function viewHome() {
 
   ${statusy()}
 
-  <h2 class="section-title">Do załatwienia <small class="extra">przykłady</small></h2>
+  <h2 class="section-title">Do załatwienia <small class="extra">bez wniosku</small></h2>
   <ul class="card">
     ${PRZYPOMNIENIA.map(r => `
       <li>
-        <div class="row">
-          <span class="row-ic ${r.pilne ? 'row-ic--warn' : ''}" aria-hidden="true">${r.tag}</span>
+        <a class="row" href="#/sprawa/${r.id}/${r.zrobione() ? 2 : 1}">
+          <span class="row-ic ${r.pilne && !r.zrobione() ? 'row-ic--warn' : ''}" aria-hidden="true">${r.tag}</span>
           <span class="row-main">
-            <span class="row-title">${r.tytul}</span>
-            <span class="row-sub">${r.opis}</span>
+            <span class="row-title">${r.tytul()}</span>
+            <span class="row-sub">${r.opis()}</span>
           </span>
-        </div>
+          <span aria-hidden="true" style="color:var(--ink-3)">›</span>
+        </a>
       </li>`).join('')}
   </ul>
-  <p class="fine extra">Ten prototyp rozwija jedną sprawę od początku do końca — przypomnienia pokazują kontekst.</p>
+  <p class="fine extra">Każda pozycja to gotowa sprawa: dane z rejestru, jedna decyzja, a potem status także w „Sprawach”.</p>
 
   <h2 class="section-title">Co chcesz załatwić?</h2>
   <div class="tiles">
@@ -274,6 +347,39 @@ function sprawyWToku() {
       opis: 'Wysłany ' + fmtDate(state.swiadczenie.data) + '. Weryfikacja w rejestrach do 3 dni.',
       znacznik: { tekst: 'W toku', wariant: 'muted' },
       href: '#/sprawa/swiadczenie/4'
+    });
+  }
+
+  if (state.oc) {
+    lista.push({
+      klucz: 'oc',
+      etykieta: 'OC',
+      tytul: 'Polisa opłacona — ' + zl(state.oc.skladka),
+      opis: 'Zapłacone ' + fmtDate(state.oc.data) + '. Ochrona do ' + fmtDate(OC.nowyTermin) + '.',
+      znacznik: { tekst: 'Opłacone', wariant: 'ok' },
+      href: '#/sprawa/oc/2'
+    });
+  }
+
+  if (state.bt) {
+    lista.push({
+      klucz: 'bt',
+      etykieta: 'Badanie techniczne',
+      tytul: 'Wizyta ' + fmtDate(state.bt.wizyta),
+      opis: state.bt.godzina + ' · ' + BT.stacja + ', ' + BT.adres,
+      znacznik: { tekst: 'Umówione', wariant: 'muted' },
+      href: '#/sprawa/bt/2'
+    });
+  }
+
+  if (state.us) {
+    lista.push({
+      klucz: 'us',
+      etykieta: 'Urząd skarbowy',
+      tytul: 'Nadpłata ' + zl(state.us.kwota) + ' przekazana',
+      opis: 'Zlecone ' + fmtDate(state.us.data) + '. Wpływ do 2 dni roboczych.',
+      znacznik: { tekst: 'W toku', wariant: 'muted' },
+      href: '#/sprawa/us/2'
     });
   }
 
@@ -812,6 +918,144 @@ function swiadczenieWynik() {
   <a class="btn btn--primary" href="#/">Wróć na start</a>`;
 }
 
+/* ---------- sprawy z ekranu startowego ---------- */
+
+function btWizyta() {
+  return addDays(isoToday(), 6);
+}
+
+function viewOc(step) {
+  if (step > 1 && !state.oc) step = 1;
+  return step === 1 ? ocEkran() : ocWynik();
+}
+
+function ocEkran() {
+  const d = dniDo(OC.termin);
+  const naglowek = state.oc ? 'OC opłacone'
+    : d > 0 ? 'OC kończy się za ' + d + ' ' + odmianaDni(d)
+      : d === 0 ? 'OC kończy się dziś'
+        : 'OC wygasło ' + (-d) + ' ' + odmianaDni(-d) + ' temu';
+  return `
+  <a class="back" href="#/">Wróć</a>
+  <h1>${naglowek}</h1>
+  <p class="lede">${t('Sprawdź polisę i zapłać.', 'Dane polisy pochodzą z rejestru ubezpieczyciela — nie przepisujesz numeru ani kwoty.')}</p>
+  <ul class="card fields">
+    <li><span class="k">Pojazd</span><span class="v">${OC.pojazd}</span></li>
+    <li><span class="k">Ubezpieczyciel</span><span class="v">${OC.ubezpieczyciel}</span></li>
+    <li><span class="k">Polisa</span><span class="v">${OC.polisa}</span></li>
+    <li><span class="k">Składka</span><span class="v">${zl(OC.skladka)}</span></li>
+    <li><span class="k">Ochrona do</span><span class="v">${fmtDate(OC.termin)}</span></li>
+  </ul>
+  ${state.oc
+      ? `<div class="status-card is-ok">
+    <div class="status-top"><strong>Zapłacone</strong><span class="badge badge--ok">Opłacone</span></div>
+    <p class="plain" style="margin:.4rem 0 0">${fmtDate(state.oc.data)} · ochrona do ${fmtDate(OC.nowyTermin)}</p>
+  </div>
+  <a class="btn btn--primary" href="#/sprawa/oc/2">Zobacz potwierdzenie</a>`
+      : `<button class="btn btn--primary" type="button" data-action="oc-zaplac">Zapłać ${zl(OC.skladka)}</button>
+  <p class="fine">Po terminie ochrona wygasa, a UFG nalicza opłatę za każdy dzień bez OC — dlatego przypominam wcześniej.</p>`}
+  <p class="fine">Płatność jest symulowana — nic nie zostanie pobrane.</p>`;
+}
+
+function ocWynik() {
+  const o = state.oc;
+  return `
+  <h1>Polisa opłacona</h1>
+  <p class="lede">${t('Ochrona trwa bez przerwy.', 'Ochrona trwa bez przerwy — polisa przedłużona do ' + fmtDate(OC.nowyTermin) + '.')}</p>
+  <ol class="timeline">
+    <li class="is-done"><strong>Dziś, ${fmtDate(o.data)}</strong><span>Zapłacono ${zl(o.skladka)} · potwierdzenie w aplikacji ubezpieczyciela</span></li>
+    <li class="is-done"><strong>Od razu</strong><span>Ochrona przedłużona do ${fmtDate(OC.nowyTermin)}</span></li>
+    <li><strong>Za rok</strong><span>Przypomnę 11 dni przed końcem polisy</span></li>
+  </ol>
+  <a class="btn btn--primary" href="#/">Wróć na start</a>
+  <a class="btn btn--ghost" href="#/sprawy">Zobacz w Sprawach</a>`;
+}
+
+function viewBt(step) {
+  if (step > 1 && !state.bt) step = 1;
+  return step === 1 ? btEkran() : btWynik();
+}
+
+function btEkran() {
+  const w = btWizyta();
+  return `
+  <a class="back" href="#/">Wróć</a>
+  <h1>Badanie techniczne do ${fmtDate(BT.termin)}</h1>
+  <p class="lede">${t('Mam wolny termin. Potwierdź.', 'Znalazłem najbliższy wolny termin w Twojej okolicy — sprawdź dane i potwierdź.')}</p>
+  <ul class="card fields">
+    <li><span class="k">Pojazd</span><span class="v">${BT.pojazd}</span></li>
+    <li><span class="k">Ostatnie badanie</span><span class="v">${fmtDate(BT.ostatnie)} · bez uwag</span></li>
+    <li><span class="k">Ważne do</span><span class="v">${fmtDate(BT.termin)}</span></li>
+    <li><span class="k">Stacja</span><span class="v">${BT.stacja}<br>${BT.adres}</span></li>
+    <li><span class="k">Termin</span><span class="v">${fmtDay(w)}, ${BT.godzina}</span></li>
+  </ul>
+  ${state.bt
+      ? `<div class="status-card">
+    <div class="status-top"><strong>Termin zarezerwowany</strong><span class="badge badge--muted">Umówione</span></div>
+    <p class="plain" style="margin:.4rem 0 0">${fmtDate(state.bt.wizyta)}, ${state.bt.godzina} · ${BT.stacja}</p>
+  </div>
+  <a class="btn btn--primary" href="#/sprawa/bt/2">Zobacz potwierdzenie</a>`
+      : `<button class="btn btn--primary" type="button" data-action="bt-umow">Umów na ${fmtDate(w)}, ${BT.godzina}</button>
+  <p class="fine">Badanie możesz zrobić do 30 dni przed terminem — nowy termin liczy się od daty z dowodu, więc nic nie tracisz.</p>`}
+  <p class="fine">Rezerwacja jest symulowana — żadna stacja nie została powiadomiona.</p>`;
+}
+
+function btWynik() {
+  const b = state.bt;
+  return `
+  <h1>Termin umówiony</h1>
+  <p class="lede">${t('Przyjdź z dowodem rejestracyjnym.', 'Wizyta jest zarezerwowana. Przyjedź z dowodem rejestracyjnym — resztę załatwi stacja.')}</p>
+  <ol class="timeline">
+    <li class="is-done"><strong>Dziś, ${fmtDate(b.data)}</strong><span>Zarezerwowano ${fmtDate(b.wizyta)}, ${b.godzina} · ${BT.stacja}</span></li>
+    <li><strong>${fmtDate(b.wizyta)}</strong><span>Badanie — około 30 minut</span></li>
+    <li><strong>Po badaniu</strong><span>Wpis w CEPiK — nowy termin pojawi się w aplikacji sam</span></li>
+  </ol>
+  <a class="btn btn--primary" href="#/">Wróć na start</a>
+  <a class="btn btn--ghost" href="#/sprawy">Zobacz w Sprawach</a>`;
+}
+
+function viewUs(step) {
+  if (step > 1 && !state.us) step = 1;
+  return step === 1 ? usEkran() : usWynik();
+}
+
+function usEkran() {
+  return `
+  <a class="back" href="#/">Wróć</a>
+  <h1>Pismo z urzędu skarbowego</h1>
+  <p class="lede">${t('Nadpłata ' + zl(US.kwota) + '. Możesz ją od razu przekazać na konto.', 'Urząd stwierdził nadpłatę podatku. Możesz ją przekazać na swoje konto bez wypełniania wniosku.')}</p>
+  <ul class="card fields">
+    <li><span class="k">Nadawca</span><span class="v">${US.urzad}</span></li>
+    <li><span class="k">Pismo</span><span class="v">${US.pismo}</span></li>
+    <li><span class="k">Wpłynęło</span><span class="v">${fmtDate(US.wplynelo)}</span></li>
+    <li><span class="k">Nadpłata</span><span class="v">${zl(US.kwota)} · PIT za ${US.rok}</span></li>
+    <li><span class="k">Konto</span><span class="v">${US.konto} · z rejestru</span></li>
+  </ul>
+  ${state.us
+      ? `<div class="status-card">
+    <div class="status-top"><strong>Zlecenie przyjęte</strong><span class="badge badge--muted">W toku</span></div>
+    <p class="plain" style="margin:.4rem 0 0">${zl(state.us.kwota)} na konto ${state.us.konto} · zlecone ${fmtDate(state.us.data)}</p>
+  </div>
+  <a class="btn btn--primary" href="#/sprawa/us/2">Zobacz potwierdzenie</a>`
+      : `<button class="btn btn--primary" type="button" data-action="us-przekaz">Przekaż ${zl(US.kwota)} na konto ${US.konto}</button>
+  <p class="fine">Numer konta pochodzi z rejestru, więc nie składasz ZAP-3 ani nie podajesz go w urzędzie.</p>`}
+  <p class="fine">Pismo i kwota są fikcyjne. Nic nie zostanie przekazane.</p>`;
+}
+
+function usWynik() {
+  const u = state.us;
+  return `
+  <h1>Nadpłata przekazana</h1>
+  <p class="lede">${t('Pieniądze będą na koncie w 2 dni.', 'Zlecenie poszło do urzędu. Pieniądze będą na koncie w ciągu dwóch dni roboczych.')}</p>
+  <ol class="timeline">
+    <li class="is-done"><strong>Dziś, ${fmtDate(u.data)}</strong><span>Zlecenie przekazania ${zl(u.kwota)} na konto ${u.konto}</span></li>
+    <li><strong>Do 2 dni roboczych</strong><span>Pieniądze na koncie</span></li>
+    <li><strong>Po wpływie</strong><span>Pismo zamknięte — potwierdzenie w aplikacji</span></li>
+  </ol>
+  <a class="btn btn--primary" href="#/">Wróć na start</a>
+  <a class="btn btn--ghost" href="#/sprawy">Zobacz w Sprawach</a>`;
+}
+
 function viewNotFound() {
   return `<h1>Nie ma tu nic</h1><p class="lede">Ten ekran nie istnieje w prototypie.</p><a class="btn btn--primary" href="#/">Wróć na start</a>`;
 }
@@ -861,7 +1105,10 @@ const NAZWY_SPRAW = {
   'utrata-dowodu': 'Utrata dowodu',
   'nowy-dowod': 'Wniosek o nowy dowód',
   meldunek: 'Meldunek',
-  swiadczenie: '800+'
+  swiadczenie: '800+',
+  oc: 'OC',
+  bt: 'Badanie techniczne',
+  us: 'Pismo z urzędu skarbowego'
 };
 
 function setTitle(seg) {
@@ -913,7 +1160,10 @@ const PRZEPLYWY = {
   'utrata-dowodu': { kroki: 3, widok: viewUtrata, maStan: () => !!state.case },
   'nowy-dowod': { kroki: 2, widok: viewNowyDowod, maStan: () => !!state.wniosek },
   meldunek: { kroki: 3, widok: viewMeldunek, maStan: () => !!state.meldunek },
-  swiadczenie: { kroki: 3, widok: viewSwiadczenie, maStan: () => !!state.swiadczenie }
+  swiadczenie: { kroki: 3, widok: viewSwiadczenie, maStan: () => !!state.swiadczenie },
+  oc: { kroki: 1, widok: viewOc, maStan: () => !!state.oc },
+  bt: { kroki: 1, widok: viewBt, maStan: () => !!state.bt },
+  us: { kroki: 1, widok: viewUs, maStan: () => !!state.us }
 };
 
 function viewSprawa(id, step) {
@@ -1003,6 +1253,30 @@ document.addEventListener('click', e => {
     save();
     location.hash = '#/sprawa/swiadczenie/4';
     toast('Wniosek 800+ wysłany. Odezwę się przed pierwszą wypłatą.');
+    return;
+  }
+
+  if (action === 'oc-zaplac') {
+    state.oc = { skladka: OC.skladka, data: isoToday() };
+    save();
+    location.hash = '#/sprawa/oc/2';
+    toast('Polisa opłacona. Ochrona trwa bez przerwy.');
+    return;
+  }
+
+  if (action === 'bt-umow') {
+    state.bt = { wizyta: btWizyta(), godzina: BT.godzina, stacja: BT.stacja, data: isoToday() };
+    save();
+    location.hash = '#/sprawa/bt/2';
+    toast('Termin zarezerwowany. Przypomnę dzień wcześniej.');
+    return;
+  }
+
+  if (action === 'us-przekaz') {
+    state.us = { kwota: US.kwota, konto: US.konto, data: isoToday() };
+    save();
+    location.hash = '#/sprawa/us/2';
+    toast('Zlecenie przyjęte. Pieniądze do 2 dni roboczych.');
     return;
   }
 
