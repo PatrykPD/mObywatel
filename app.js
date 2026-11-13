@@ -75,58 +75,83 @@ const OC = {
   pojazd: 'Toyota Yaris · GD 8K113',
   ubezpieczyciel: 'Ubezpieczalnia Krajowa S.A.',
   polisa: 'OC/2026/084512',
-  skladka: 612,
-  termin: '2026-11-24',
-  nowyTermin: '2027-11-24'
+  skladka: 612
 };
+
+/* Terminy liczone od dziś. Wpisana na sztywno data po kilku tygodniach zamienia pierwszy
+   ekran w „OC wygasło N dni temu”, czyli demo wygląda na zepsute w dniu oceny. */
+function ocTermin() {
+  return addDays(isoToday(), 11);
+}
+
+function ocNowyTermin() {
+  return addDays(ocTermin(), 365);
+}
 
 const BT = {
   pojazd: 'Toyota Yaris · GD 8K113',
-  ostatnie: '2026-01-20',
-  termin: '2027-01-20',
   stacja: 'Stacja Kontroli Pojazdów „Motyw”',
   adres: 'ul. Wolska 88, Warszawa · 1,9 km',
   godzina: '9:40'
 };
 
+function btTermin() {
+  return addDays(isoToday(), 68);
+}
+
+function btOstatnie() {
+  return addDays(btTermin(), -365);
+}
+
+/* Krótka data bez roku — do wierszy, w których miejsce jest ciasne. */
+function fmtDzienMiesiac(iso) {
+  return new Date(iso + 'T12:00:00').toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' });
+}
+
 const US = {
   urzad: 'Pierwszy Urząd Skarbowy w Warszawie',
   pismo: 'PO/2026/448210',
-  wplynelo: '2026-11-04',
   kwota: 240,
   rok: '2025',
   konto: '…8421'
 };
 
+function usWplynelo() {
+  return addDays(isoToday(), -9);
+}
+
 const PRZYPOMNIENIA = [
   {
     id: 'oc', tag: 'OC', pilne: true,
     zrobione: () => !!state.oc,
+    znacznik: () => state.oc ? { tekst: 'Opłacone', wariant: 'ok' } : null,
     tytul: () => {
       if (state.oc) return 'OC opłacone';
-      const d = dniDo(OC.termin);
+      const d = dniDo(ocTermin());
       if (d > 0) return 'OC kończy się za ' + d + ' ' + odmianaDni(d);
       if (d === 0) return 'OC kończy się dziś';
       return 'OC wygasło ' + (-d) + ' ' + odmianaDni(-d) + ' temu';
     },
     opis: () => state.oc
-      ? 'Zapłacone ' + fmtDate(state.oc.data) + ' · ochrona do ' + fmtDate(OC.nowyTermin)
+      ? 'Do ' + fmtDate(state.oc.nowyTermin)
       : OC.pojazd + ' · składka ' + zl(OC.skladka)
   },
   {
     id: 'bt', tag: 'BT', pilne: false,
     zrobione: () => !!state.bt,
-    tytul: () => state.bt ? 'Badanie techniczne umówione' : 'Badanie techniczne',
+    znacznik: () => state.bt ? { tekst: 'Umówione', wariant: 'muted' } : null,
+    tytul: () => state.bt ? 'Badanie umówione' : 'Badanie techniczne',
     opis: () => state.bt
-      ? fmtDate(state.bt.wizyta) + ', ' + state.bt.godzina + ' · ' + BT.stacja
-      : 'Ważne do ' + fmtDate(BT.termin) + ' · Toyota Yaris'
+      ? 'Wizyta ' + fmtDzienMiesiac(state.bt.wizyta) + ', ' + state.bt.godzina
+      : 'Ważne do ' + fmtDate(btTermin()) + ' · Toyota Yaris'
   },
   {
     id: 'us', tag: 'US', pilne: false,
     zrobione: () => !!state.us,
+    znacznik: () => state.us ? { tekst: 'W toku', wariant: 'muted' } : null,
     tytul: () => state.us ? 'Nadpłata przekazana' : 'Pismo z urzędu skarbowego',
     opis: () => state.us
-      ? zl(state.us.kwota) + ' na konto ' + state.us.konto + ' · zlecone ' + fmtDate(state.us.data)
+      ? zl(state.us.kwota) + ' na konto ' + state.us.konto
       : 'Nadpłata ' + zl(US.kwota) + ' do zwrotu · PIT za ' + US.rok
   }
 ];
@@ -265,6 +290,7 @@ function viewHome() {
             <span class="row-title">${r.tytul()}</span>
             <span class="row-sub">${r.opis()}</span>
           </span>
+          ${r.znacznik() ? `<span class="badge badge--${r.znacznik().wariant}">${r.znacznik().tekst}</span>` : ''}
           <span aria-hidden="true" style="color:var(--ink-3)">›</span>
         </a>
       </li>`).join('')}
@@ -355,7 +381,7 @@ function sprawyWToku() {
       klucz: 'oc',
       etykieta: 'OC',
       tytul: 'Polisa opłacona — ' + zl(state.oc.skladka),
-      opis: 'Zapłacone ' + fmtDate(state.oc.data) + '. Ochrona do ' + fmtDate(OC.nowyTermin) + '.',
+      opis: 'Zapłacone ' + fmtDate(state.oc.data) + '. Ochrona do ' + fmtDate(state.oc.nowyTermin) + '.',
       znacznik: { tekst: 'Opłacone', wariant: 'ok' },
       href: '#/sprawa/oc/2'
     });
@@ -930,7 +956,8 @@ function viewOc(step) {
 }
 
 function ocEkran() {
-  const d = dniDo(OC.termin);
+  const termin = state.oc ? state.oc.termin : ocTermin();
+  const d = dniDo(termin);
   const naglowek = state.oc ? 'OC opłacone'
     : d > 0 ? 'OC kończy się za ' + d + ' ' + odmianaDni(d)
       : d === 0 ? 'OC kończy się dziś'
@@ -944,12 +971,12 @@ function ocEkran() {
     <li><span class="k">Ubezpieczyciel</span><span class="v">${OC.ubezpieczyciel}</span></li>
     <li><span class="k">Polisa</span><span class="v">${OC.polisa}</span></li>
     <li><span class="k">Składka</span><span class="v">${zl(OC.skladka)}</span></li>
-    <li><span class="k">Ochrona do</span><span class="v">${fmtDate(OC.termin)}</span></li>
+    <li><span class="k">Ochrona do</span><span class="v">${fmtDate(termin)}</span></li>
   </ul>
   ${state.oc
       ? `<div class="status-card is-ok">
     <div class="status-top"><strong>Zapłacone</strong><span class="badge badge--ok">Opłacone</span></div>
-    <p class="plain" style="margin:.4rem 0 0">${fmtDate(state.oc.data)} · ochrona do ${fmtDate(OC.nowyTermin)}</p>
+    <p class="plain" style="margin:.4rem 0 0">${fmtDate(state.oc.data)} · ochrona do ${fmtDate(state.oc.nowyTermin)}</p>
   </div>
   <a class="btn btn--primary" href="#/sprawa/oc/2">Zobacz potwierdzenie</a>`
       : `<button class="btn btn--primary" type="button" data-action="oc-zaplac">Zapłać ${zl(OC.skladka)}</button>
@@ -961,14 +988,14 @@ function ocWynik() {
   const o = state.oc;
   return `
   <h1>Polisa opłacona</h1>
-  <p class="lede">${t('Ochrona trwa bez przerwy.', 'Ochrona trwa bez przerwy — polisa przedłużona do ' + fmtDate(OC.nowyTermin) + '.')}</p>
+  <p class="lede">${t('Ochrona trwa bez przerwy.', 'Ochrona trwa bez przerwy — polisa przedłużona do ' + fmtDate(o.nowyTermin) + '.')}</p>
   <ol class="timeline">
     <li class="is-done"><strong>Dziś, ${fmtDate(o.data)}</strong><span>Zapłacono ${zl(o.skladka)} · potwierdzenie w aplikacji ubezpieczyciela</span></li>
-    <li class="is-done"><strong>Od razu</strong><span>Ochrona przedłużona do ${fmtDate(OC.nowyTermin)}</span></li>
+    <li class="is-done"><strong>Od razu</strong><span>Ochrona przedłużona do ${fmtDate(o.nowyTermin)}</span></li>
     <li><strong>Za rok</strong><span>Przypomnę 11 dni przed końcem polisy</span></li>
   </ol>
   <a class="btn btn--primary" href="#/">Wróć na start</a>
-  <a class="btn btn--ghost" href="#/sprawy">Zobacz w Sprawach</a>`;
+  <button class="btn btn--ghost" type="button" data-action="oc-cofnij">Cofnij decyzję</button>`;
 }
 
 function viewBt(step) {
@@ -977,15 +1004,16 @@ function viewBt(step) {
 }
 
 function btEkran() {
-  const w = btWizyta();
+  const w = state.bt ? state.bt.wizyta : btWizyta();
+  const termin = btTermin();
   return `
   <a class="back" href="#/">Wróć</a>
-  <h1>Badanie techniczne do ${fmtDate(BT.termin)}</h1>
+  <h1>Badanie techniczne do ${fmtDate(termin)}</h1>
   <p class="lede">${t('Mam wolny termin. Potwierdź.', 'Znalazłem najbliższy wolny termin w Twojej okolicy — sprawdź dane i potwierdź.')}</p>
   <ul class="card fields">
     <li><span class="k">Pojazd</span><span class="v">${BT.pojazd}</span></li>
-    <li><span class="k">Ostatnie badanie</span><span class="v">${fmtDate(BT.ostatnie)} · bez uwag</span></li>
-    <li><span class="k">Ważne do</span><span class="v">${fmtDate(BT.termin)}</span></li>
+    <li><span class="k">Ostatnie badanie</span><span class="v">${fmtDate(btOstatnie())} · bez uwag</span></li>
+    <li><span class="k">Ważne do</span><span class="v">${fmtDate(termin)}</span></li>
     <li><span class="k">Stacja</span><span class="v">${BT.stacja}<br>${BT.adres}</span></li>
     <li><span class="k">Termin</span><span class="v">${fmtDay(w)}, ${BT.godzina}</span></li>
   </ul>
@@ -1011,7 +1039,7 @@ function btWynik() {
     <li><strong>Po badaniu</strong><span>Wpis w CEPiK — nowy termin pojawi się w aplikacji sam</span></li>
   </ol>
   <a class="btn btn--primary" href="#/">Wróć na start</a>
-  <a class="btn btn--ghost" href="#/sprawy">Zobacz w Sprawach</a>`;
+  <button class="btn btn--ghost" type="button" data-action="bt-cofnij">Cofnij decyzję</button>`;
 }
 
 function viewUs(step) {
@@ -1027,7 +1055,7 @@ function usEkran() {
   <ul class="card fields">
     <li><span class="k">Nadawca</span><span class="v">${US.urzad}</span></li>
     <li><span class="k">Pismo</span><span class="v">${US.pismo}</span></li>
-    <li><span class="k">Wpłynęło</span><span class="v">${fmtDate(US.wplynelo)}</span></li>
+    <li><span class="k">Wpłynęło</span><span class="v">${fmtDate(usWplynelo())}</span></li>
     <li><span class="k">Nadpłata</span><span class="v">${zl(US.kwota)} · PIT za ${US.rok}</span></li>
     <li><span class="k">Konto</span><span class="v">${US.konto} · z rejestru</span></li>
   </ul>
@@ -1053,7 +1081,7 @@ function usWynik() {
     <li><strong>Po wpływie</strong><span>Pismo zamknięte — potwierdzenie w aplikacji</span></li>
   </ol>
   <a class="btn btn--primary" href="#/">Wróć na start</a>
-  <a class="btn btn--ghost" href="#/sprawy">Zobacz w Sprawach</a>`;
+  <button class="btn btn--ghost" type="button" data-action="us-cofnij">Cofnij decyzję</button>`;
 }
 
 function viewNotFound() {
@@ -1257,7 +1285,7 @@ document.addEventListener('click', e => {
   }
 
   if (action === 'oc-zaplac') {
-    state.oc = { skladka: OC.skladka, data: isoToday() };
+    state.oc = { skladka: OC.skladka, data: isoToday(), termin: ocTermin(), nowyTermin: ocNowyTermin() };
     save();
     location.hash = '#/sprawa/oc/2';
     toast('Polisa opłacona. Ochrona trwa bez przerwy.');
@@ -1277,6 +1305,16 @@ document.addEventListener('click', e => {
     save();
     location.hash = '#/sprawa/us/2';
     toast('Zlecenie przyjęte. Pieniądze do 2 dni roboczych.');
+    return;
+  }
+
+  if (action === 'oc-cofnij' || action === 'bt-cofnij' || action === 'us-cofnij') {
+    const klucz = action.replace('-cofnij', '');
+    state[klucz] = null;
+    save();
+    location.hash = '#/sprawa/' + klucz + '/1';
+    render();
+    toast('Cofnięte. Możesz przejść sprawę jeszcze raz.');
     return;
   }
 

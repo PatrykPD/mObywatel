@@ -7,7 +7,7 @@
   --surface-2: #f6f8fc;
   --ink: #101828;
   --ink-2: #475467;
-  --ink-3: #7b8794;
+  --ink-3: #5c6875;
   --line: #e3e7ee;
   --brand: #1b3f7d;
   --brand-2: #2a5aa8;
@@ -187,8 +187,8 @@ a:focus-visible, .switch input:focus-visible + .switch-track { outline: 3px soli
 .status-card.is-ok { background: var(--ok-soft); border-color: #c7e8d6; }
 .status-top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
 .badge { font-size: .7rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; padding: .25rem .55rem; border-radius: 999px; }
-.badge--warn { background: #f6e2b7; color: var(--warn); }
-.badge--ok { background: #c3e9d4; color: var(--ok); }
+.badge--warn { background: #f6e2b7; color: #6f4900; }
+.badge--ok { background: #c3e9d4; color: #076b40; }
 .badge--muted { background: #e7ebf2; color: var(--ink-2); }
 
 .checks { list-style: none; padding: 0; margin: .8rem 0 1rem; display: grid; gap: .7rem; }
