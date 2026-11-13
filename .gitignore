@@ -1,0 +1,6 @@
+# lokalny serwer podglądu — nie jest częścią zgłoszenia
+.tools/
+# pobrany prototyp organizatora — materiał obcy, nie publikujemy go
+mobywatel-ai/
+Thumbs.db
+.DS_Store

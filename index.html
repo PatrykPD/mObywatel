@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pl" data-senior="off">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#1b3f7d">
+<title>mObywatel — koncepcja | mObywatel Challenge</title>
+<meta name="description" content="Klikalny prototyp koncepcji aplikacji mObywatel: utrata dokumentu załatwiona od początku do końca. Bez logowania, dane fikcyjne.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pl_PL">
+<meta property="og:site_name" content="mObywatel — koncepcja">
+<meta property="og:title" content="mObywatel — koncepcja | mObywatel Challenge">
+<meta property="og:description" content="Klikalny prototyp: utrata dokumentu załatwiona od początku do końca. Bez logowania, dane fikcyjne.">
+<meta property="og:url" content="https://patrykpd.github.io/mObywatel/">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Przejdź do treści</a>
+
+<div class="device">
+  <header class="appbar">
+    <a class="brand" href="#/" aria-label="mObywatel — koncepcja, ekran startowy">
+      <span class="brand-mark" aria-hidden="true">m</span>
+      <span class="brand-text">mObywatel<em>koncepcja</em></span>
+    </a>
+    <button class="a11y-btn" type="button" data-action="senior-toggle" aria-pressed="false">
+      A<span aria-hidden="true">+</span><span class="sr-only"> — tryb seniora: większy tekst i prostszy język</span>
+    </button>
+  </header>
+
+  <main id="main" tabindex="-1"></main>
+
+  <noscript>
+    <div class="noscript">
+      <strong>Ten prototyp potrzebuje JavaScriptu</strong>
+      Ekrany buduje przeglądarka, więc bez włączonych skryptów strona jest pusta. Włącz JavaScript
+      i odśwież — nie trzeba się nigdzie logować ani nic instalować.
+    </div>
+  </noscript>
+
+  <nav class="tabbar" aria-label="Nawigacja główna">
+    <a href="#/" data-tab="home">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 10.6 12 4l8 6.6V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/></svg>
+      <span>Start</span>
+    </a>
+    <a href="#/sprawy" data-tab="sprawy">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M8 4h8a2 2 0 0 1 2 2v14l-6-3-6 3V6a2 2 0 0 1 2-2z"/><path d="M9.5 9h5M9.5 12.5h3"/></svg>
+      <span>Sprawy</span>
+    </a>
+    <a href="#/dokumenty" data-tab="dokumenty">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="11" r="2.2"/><path d="M6 16.4c.8-1.5 1.9-2.2 3-2.2s2.2.7 3 2.2M15 10h4M15 13.5h3"/></svg>
+      <span>Dokumenty</span>
+    </a>
+    <a href="#/ustawienia" data-tab="ustawienia">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2.2"/><circle cx="10" cy="17" r="2.2"/></svg>
+      <span>Ustawienia</span>
+    </a>
+  </nav>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
