@@ -116,10 +116,10 @@ const PRZYPOMNIENIA = [
   {
     id: 'bt', tag: 'BT', pilne: false,
     zrobione: () => !!state.bt,
-    tytul: () => state.bt ? 'Badanie techniczne umówione' : 'Badanie techniczne do ' + fmtDate(BT.termin),
+    tytul: () => state.bt ? 'Badanie techniczne umówione' : 'Badanie techniczne',
     opis: () => state.bt
       ? fmtDate(state.bt.wizyta) + ', ' + state.bt.godzina + ' · ' + BT.stacja
-      : BT.pojazd + ' · ostatnie ' + fmtDate(BT.ostatnie)
+      : 'Ważne do ' + fmtDate(BT.termin) + ' · Toyota Yaris'
   },
   {
     id: 'us', tag: 'US', pilne: false,
