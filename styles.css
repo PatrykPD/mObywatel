@@ -142,7 +142,7 @@ li + li > .row, .row + .row { border-top: 1px solid var(--line); }
   padding: .95rem 1rem; color: var(--ink);
   transition: border-color .15s, background .15s;
 }
-.option:hover { border-color: var(--brand-2); background: var(--surface-2); }
+
 .option-head { display: flex; align-items: center; gap: .55rem; }
 .option input[type="radio"],
 .option input[type="checkbox"] { flex: none; width: 1.25rem; height: 1.25rem; margin: 0; accent-color: var(--brand); }
@@ -167,9 +167,7 @@ li + li > .row, .row + .row { border-top: 1px solid var(--line); }
   transition: filter .15s, background .15s;
 }
 .btn--primary { background: var(--brand); color: #fff; }
-.btn--primary:hover { filter: brightness(1.08); }
 .btn--ghost { background: var(--surface); color: var(--brand); border-color: #cfdcf2; }
-.btn--ghost:hover { background: var(--brand-soft); }
 .btn:disabled { background: #5b6676; color: #fff; cursor: not-allowed; filter: none; }
 .btn:focus-visible, .option:focus-visible, .a11y-btn:focus-visible, .row:focus-visible,
 a:focus-visible, .switch input:focus-visible + .switch-track { outline: 3px solid #7aa7ea; outline-offset: 2px; }
@@ -235,18 +233,23 @@ a:focus-visible, .switch input:focus-visible + .switch-track { outline: 3px soli
   background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow);
   text-decoration: none; color: var(--ink); font-size: .88rem; font-weight: 600; line-height: 1.25;
 }
-.tile:hover { border-color: var(--brand-2); }
+
 .tile-ic { font-size: 1.15rem; line-height: 1; }
 .tile--soon { color: var(--ink-3); font-weight: 500; box-shadow: none; background: var(--surface-2); }
 .tile--soon .tile-ic { opacity: .55; }
 .tile-tag { font-size: .64rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--brand); }
 
 /* --- pasek dokumentów --- */
-.docs { display: flex; gap: .55rem; overflow-x: auto; padding: .15rem .1rem .6rem; margin: 0 -.1rem; scrollbar-width: thin; }
+.docs {
+  display: flex; gap: .55rem; overflow-x: auto; padding: .15rem .1rem .6rem; margin: 0 -.1rem;
+  scrollbar-width: thin; overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch;
+}
 .doc-card {
   flex: none; width: 10.2rem; padding: .8rem .85rem; border-radius: 14px;
   background: linear-gradient(160deg, #23467f, #16294a); color: #fff; text-decoration: none;
   box-shadow: 0 10px 22px -16px rgba(16, 24, 40, .9);
+  scroll-snap-align: start;
 }
 .doc-card.is-blocked { background: linear-gradient(160deg, #5c6373, #3c424f); }
 .doc-card small { display: block; font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; opacity: .7; }
@@ -302,6 +305,15 @@ details.info p { font-size: .85rem; color: var(--ink-2); margin: .6rem 0 0; }
   opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 30;
 }
 .toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
+
+/* Efekty hover tylko tam, gdzie jest kursor. Na dotyku :hover zostaje po
+   dotknięciu i kafel wygląda, jakby był zaznaczony. */
+@media (hover: hover) {
+  .option:hover { border-color: var(--brand-2); background: var(--surface-2); }
+  .btn--primary:hover { filter: brightness(1.08); }
+  .btn--ghost:hover { background: var(--brand-soft); }
+  .tile:hover { border-color: var(--brand-2); }
+}
 
 /* --- tryb seniora --- */
 html[data-senior="on"] .extra { display: none; }
